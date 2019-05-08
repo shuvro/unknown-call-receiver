@@ -75,7 +75,7 @@ public class MainActivity extends AppCompatActivity {
                                 }
                             }
                             if (isNotSave) {
-                                textView.setText(incomingNumber);
+                                textView.setText(incomingNumber.length() > 0 ? incomingNumber : "No Incoming");
                                 button.callOnClick();
                             }
                         }
