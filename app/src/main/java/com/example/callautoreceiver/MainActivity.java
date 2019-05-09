@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.MediaRecorder;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -200,21 +201,52 @@ public class MainActivity extends AppCompatActivity {
                     if (state.equals(TelephonyManager.EXTRA_STATE_RINGING)) {
                         inCall = bundle.getString(TelephonyManager.EXTRA_INCOMING_NUMBER);
                         wasRinging = true;
-                        Toast.makeText(context, "IN : " + inCall, Toast.LENGTH_LONG).show();
                     } else if (state.equals(TelephonyManager.EXTRA_STATE_OFFHOOK)) {
                         if (wasRinging == true) {
-
-                            Toast.makeText(context, "ANSWERED", Toast.LENGTH_LONG).show();
-
-                            startRecord("incoming");
+                            if (phoneNumber != null && phoneNumber.length() > 1) {
+                                boolean isNotSave = true;
+                                for (String[] strings : numberList) {
+                                    if (ServiceData.pureNumber(phoneNumber.replace("-", ""), strings[1].replace("-", ""))) {
+                                        isNotSave = false;
+                                        break;
+                                    }
+                                }
+                                if (isNotSave) {
+                                    startRecord("incoming");
+                                }
+                            }
                         }
                     } else if (state.equals(TelephonyManager.EXTRA_STATE_IDLE)) {
                         wasRinging = false;
-                        Toast.makeText(context, "REJECT || DISCO", Toast.LENGTH_LONG).show();
                         if (recordstarted) {
                             recorder.stop();
                             recordstarted = false;
                         }
+                        new AsyncTask<Void, String, String>() {
+                            @Override
+                            protected void onPreExecute() {
+                                try {
+                                    File ff = new File(Environment.getExternalStorageDirectory(), "/unknown-call-recoded");
+                                    File[] li = ff.listFiles();
+                                    for (File f : li) {
+                                        int file_size = Integer.parseInt(String.valueOf(f.length() / 1024));
+                                        if (file_size == 0) {
+                                            f.delete();
+                                        }
+                                    }
+                                } catch (Exception ex) {
+                                }
+                            }
+
+                            @Override
+                            protected String doInBackground(Void... params) {
+                                return null;
+                            }
+
+                            @Override
+                            protected void onPostExecute(String msg) {
+                            }
+                        }.execute(null, null, null);
                     }
                 }
             }
@@ -225,12 +257,12 @@ public class MainActivity extends AppCompatActivity {
             if (!sampleDir.exists()) {
                 sampleDir.mkdirs();
             }
-            String file_name = "Record" + seed;
+            String file_name = "Record-" + phoneNumber != null ? phoneNumber.replaceAll("\\+|-", "") : seed;
             try {
                 audiofile = File.createTempFile(file_name, ".amr", sampleDir);
             } catch (IOException e) {
                 e.printStackTrace();
-            }  
+            }
             recorder = new MediaRecorder();
 
             recorder.setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION);
